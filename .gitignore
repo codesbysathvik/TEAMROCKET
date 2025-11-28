@@ -1,0 +1,5 @@
+venv/
+__pycache__/
+*.pyc
+backend/scans.db
+backend/phish_model.joblib
