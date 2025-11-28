@@ -1,60 +1,79 @@
-/* logs.js - fetches logs and renders them */
+// logs.js
+const BACKEND_LOGS = "http://127.0.0.1:5000/logs";
 
-const LOGS_ENDPOINT = "http://127.0.0.1:5000/logs";
+const logsTable = document.getElementById("logsTable");
+const refreshBtn = document.getElementById("refreshLogs");
+const searchBox = document.getElementById("logSearch");
 
-const logsTable = document.getElementById('logsTable');
-const logSearch = document.getElementById('logSearch');
-const refreshBtn = document.getElementById('refreshLogs');
-
-async function fetchLogs() {
+async function loadLogs() {
+  logsTable.innerHTML = `
+    <tr><td class="p-4 text-gray-500">Loading logs...</td></tr>
+  `;
   try {
-    const res = await fetch(LOGS_ENDPOINT + '?limit=50');
-    if (!res.ok) throw new Error('fetch failed');
+    const res = await fetch(BACKEND_LOGS, { cache: "no-store" });
+    if (!res.ok) {
+      logsTable.innerHTML = `
+        <tr><td class="p-4 text-red-600">Error loading logs (status ${res.status})</td></tr>
+      `;
+      return;
+    }
     const logs = await res.json();
-    return logs;
-  } catch (e) {
-    console.error(e);
-    return [];
+    renderLogs(logs || []);
+  } catch (err) {
+    console.error("loadLogs error:", err);
+    logsTable.innerHTML = `
+      <tr><td class="p-4 text-red-600">Backend unreachable</td></tr>
+    `;
   }
 }
 
 function renderLogs(logs) {
-  let html = `<thead class="bg-gray-100"><tr>
-      <th class="p-3 text-left">URL</th>
-      <th class="p-3">Score</th>
-      <th class="p-3">Signals</th>
-      <th class="p-3">Time</th>
-    </tr></thead><tbody>`;
-
-  if (!Array.isArray(logs) || logs.length === 0) {
-    html += `<tr><td class="p-3" colspan="4">No logs found</td></tr>`;
-  } else {
-    for (const row of logs) {
-      const score = row.final_score ?? row.final_score ?? row.heuristic_score ?? 0;
-      const signals = row.signals || '';
-      const ts = row.timestamp ? (new Date(Number(row.timestamp) * 1000)).toLocaleString() : (row.time || '');
-      const bg = score >= 70 ? 'bg-red-50' : score >= 40 ? 'bg-yellow-50' : 'bg-green-50';
-      html += `<tr class="${bg}"><td class="p-3 border">${escapeHtml(row.url)}</td><td class="p-3 border">${score}</td><td class="p-3 border">${escapeHtml(signals)}</td><td class="p-3 border">${escapeHtml(ts)}</td></tr>`;
-    }
+  const search = (searchBox?.value || "").trim().toLowerCase();
+  const filtered = Array.isArray(logs)
+    ? logs.filter(l => (l.url || "").toLowerCase().includes(search))
+    : [];
+  if (!filtered.length) {
+    logsTable.innerHTML = `
+      <tr><td class="p-4 text-gray-500">No matching logs</td></tr>
+    `;
+    return;
   }
-
-  html += '</tbody>';
-  logsTable.innerHTML = html;
+  logsTable.innerHTML = `
+    <thead class="bg-gray-100">
+      <tr>
+        <th class="p-3 text-left">URL</th>
+        <th class="p-3 text-left">Score</th>
+        <th class="p-3 text-left">Signals</th>
+        <th class="p-3 text-left">Time</th>
+      </tr>
+    </thead>
+    <tbody id="logsBody"></tbody>
+  `;
+  const body = document.getElementById("logsBody");
+  body.innerHTML = "";
+  filtered.forEach(log => {
+    const tr = document.createElement("tr");
+    tr.className = "border-b";
+    const ts = log.timestamp ? (new Date(Number(log.timestamp)*1000)).toLocaleString() : "";
+    tr.innerHTML = `
+      <td class="p-3 align-top break-words">${escapeHtml(log.url || "")}</td>
+      <td class="p-3 align-top">${Number(log.final_score || 0)}</td>
+      <td class="p-3 align-top break-words">${escapeHtml(log.signals || "")}</td>
+      <td class="p-3 align-top">${ts}</td>
+    `;
+    body.appendChild(tr);
+  });
 }
 
-async function loadAndRenderLogs() {
-  const logs = await fetchLogs();
-  renderLogs(logs);
+function escapeHtml(unsafe) {
+  return String(unsafe || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
-logSearch?.addEventListener('input', async (e) => {
-  const q = e.target.value.trim().toLowerCase();
-  const logs = await fetchLogs();
-  if (!q) { renderLogs(logs); return; }
-  const filtered = logs.filter(r => (r.url || '').toLowerCase().includes(q));
-  renderLogs(filtered);
-});
+if (refreshBtn) refreshBtn.addEventListener("click", loadLogs);
+if (searchBox) searchBox.addEventListener("input", loadLogs);
 
-refreshBtn?.addEventListener('click', loadAndRenderLogs);
-
-loadAndRenderLogs();
+// load logs when page opens
+window.addEventListener("load", loadLogs);
