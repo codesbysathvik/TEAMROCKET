@@ -1,0 +1,5 @@
+- Backend code written for hackathon; original.
+- ML dataset is synthetic and created by ml/train_ml.py.
+- No uploaded file execution; attachment checks are metadata-only.
+- Redirect tracing uses safe HTTP requests; no JS execution.
+- Libraries used: Flask, requests, scikit-learn, joblib, tldextract.
