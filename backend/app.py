@@ -13,11 +13,14 @@ ml = SmallModel()
 def get_db():
     db = getattr(g, "_database", None)
     if db is None:
+        # ensure parent folder exists (should be backend/)
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
         db = g._database = sqlite3.connect(DB_PATH)
         db.row_factory = sqlite3.Row
     return db
 
-@app.before_first_request
+# startup() used to create DB tables. Some Flask versions removed
+# `before_first_request`, so we create tables at import time inside app context.
 def startup():
     db = get_db()
     db.execute("""
@@ -40,6 +43,11 @@ def startup():
         signals TEXT
     )""")
     db.commit()
+
+# Run startup immediately inside the application context so tables exist
+# before the first request (compatible with Flask 2.x and 3.x).
+with app.app_context():
+    startup()
 
 @app.teardown_appcontext
 def close_db(exc):
