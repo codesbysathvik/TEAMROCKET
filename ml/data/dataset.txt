@@ -1,0 +1,5 @@
+url,heuristic_score,additional_signal
+http://example1.com,20,low-risk
+http://example2.com,80,high-risk
+http://example3.com,35,medium-risk
+http://example4.com,90,critical
