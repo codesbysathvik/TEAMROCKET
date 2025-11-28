@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Unsafe Website Warning</title>
+  <link rel="stylesheet" href="block.css">
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>⚠️ Dangerous Site Detected</h1>
+  <p id="urlText"></p>
+
+  <div class="warning-box">
+    <p>This site has been flagged as a phishing or malicious website.</p>
+    <p>For your safety, access has been blocked.</p>
+  </div>
+
+  <button id="backBtn" class="safe-btn">Go Back to Safety</button>
+  <button id="continueBtn" class="danger-btn">Proceed Anyway</button>
+
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  let riskyUrl = params.get("url");
+
+  document.getElementById("urlText").innerText = riskyUrl;
+
+  document.getElementById("backBtn").onclick = () => {
+    history.back();
+  };
+
+  document.getElementById("continueBtn").onclick = () => {
+    window.location.href = riskyUrl;
+  };
+</script>
+
+</body>
+</html>
