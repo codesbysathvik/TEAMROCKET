@@ -2,13 +2,14 @@
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 import sqlite3, os, time
+import json
 from utils import extract_features, trace_redirects
-from models import SmallModel
+from models import SmallModelFromFiles
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "scans.db")
 app = Flask(__name__)
 CORS(app)
-ml = SmallModel()
+ml = SmallModelFromFiles()
 
 def get_db():
     db = getattr(g, "_database", None)
@@ -80,21 +81,57 @@ def scan():
     data = request.get_json() or {}
     url = (data.get("url") or "").strip()
     if not url: return jsonify({"error":"no url provided"}), 400
+
+    # extract features
     features = extract_features(url)
+
+    # --- ML payload mapping (inserted) ---
+    # prepare payload expected by ML trainer: clean_url + feature1, feature2
+    # mapping choice: feature1=url_length, feature2=host_entropy
+    ml_payload = {
+        "url": url,
+        "clean_url": url,  # replace with cleaned text if you have a cleaner
+        "feature1": float(features.get("url_length", 0.0)),
+        "feature2": float(features.get("host_entropy", 0.0))
+    }
+    # Try preferred method name first; fall back to legacy if needed
+    try:
+        ml_prob = ml.predict_prob(ml_payload)  # expected to return 0..1 or None
+    except AttributeError:
+        try:
+            ml_prob = ml.predict_malicious_prob(features)
+        except AttributeError:
+            ml_prob = None
+    # --- end ml mapping ---
+
+    # heuristic scoring
     heur, signals = heuristic_score_and_signals(features)
+
+    # redirect tracing (safe, with timeout and limited hops)
     redirect_trace = trace_redirects(url, max_hops=6, timeout=5.0)
-    ml_prob = ml.predict_malicious_prob(features)
+
+    # combine ML + heuristics
     final = combine_scores(heur, ml_prob)
     advice = "High risk — do NOT click." if final>=70 else ("Medium risk — be cautious." if final>=40 else "Low risk.")
+
     try:
         db = get_db()
         db.execute("INSERT INTO scans (url,timestamp,heuristic_score,ml_prob,final_score,signals,redirect_trace) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                   (url, int(time.time()), heur, ml_prob, final, ",".join(signals), str(redirect_trace)))
+                   (url, int(time.time()), heur, ml_prob, final, ",".join(signals), json.dumps(redirect_trace)))
         db.commit()
     except Exception as e:
         app.logger.error("DB insert failed: %s", e)
-    return jsonify({"url":url,"features":features,"heuristic_score":heur,"ml_prob":ml_prob,"final_score":final,"signals":signals,"redirect_trace":redirect_trace,"advice":advice})
 
+    return jsonify({
+        "url":url,
+        "features":features,
+        "heuristic_score":heur,
+        "ml_prob":ml_prob,
+        "final_score":final,
+        "signals":signals,
+        "redirect_trace":redirect_trace,
+        "advice":advice
+    })
 @app.route("/scan_attachment", methods=["POST"])
 def scan_attachment():
     data = request.get_json() or {}
