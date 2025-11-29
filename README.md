@@ -19,3 +19,52 @@ A system that:
 - Logs threats in a **dashboard** for easy monitoring
 
 ##Project Structure
+.
+├── backend/ # Python API + ML + heuristics
+│ ├── app.py # FastAPI/Flask entrypoint
+│ ├── features.py # URL feature extractor
+│ ├── ml/
+│ │ ├── generate_synthetic_data.py
+│ │ ├── train_model.py
+│ │ └── phish_logreg.joblib
+│ └── utils/ # Common helpers
+├── extension/ # Browser extension (JS/HTML/CSS)
+│ ├── manifest.json
+│ ├── popup.html
+│ ├── popup.js
+│ └── icons/
+├── dashboard/ # Web UI for threats
+│ ├── index.html
+│ └── js/
+├── docs/
+│ ├── README.md
+│ ├── TECH.md
+│ └── DEMO.md
+└── tests/
+└── ...
+
+To effectively detect and respond to advanced phishing and malware threats, this project proposes a modular system with three core components:
+
+Backend (Threat Analysis Engine)
+- Performs static analysis on URLs and attachments using pattern matching, domain reputation, and file type checks.
+- Implements dynamic analysis using headless browser or sandbox techniques to simulate behavior and detect hidden redirects or payloads.
+- Assigns threat scores (Low, Medium, High) based on weighted findings from both static and dynamic checks.
+- Stores scan results in a database for logging, auditing, and dashboard display.
+
+Frontend (Dashboard Interface)
+- Displays a summary of threats with severity levels and timestamps.
+- Shows a detailed table of scanned URLs and attachments, including findings and risk scores.
+- Provides a clean, responsive UI built with HTML, CSS, and JavaScript.
+- Can be extended to include user authentication, filtering, and export options.
+
+Browser Extension (Real-Time Protection)
+- Intercepts link clicks and navigation events in real time.
+- Sends URLs to the backend for scanning before allowing access.
+- Injects warning banners into web pages when threats are detected.
+- Includes a popup interface for manual URL scanning and viewing recent alerts.
+
+System Workflow
+- User clicks a link or downloads a file.
+- Extension intercepts the action and sends it to the backend.
+- Backend performs analysis and assigns a threat score.
+- Extension displays a warning if needed, and the frontend dashboard logs the result.
