@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <script src="block.js"></script>
   <title>Unsafe Website Warning</title>
   <link rel="stylesheet" href="block.css">
 </head>
@@ -24,19 +25,17 @@
 
 <script>
   const params = new URLSearchParams(window.location.search);
-  let riskyUrl = params.get("url");
+  const riskyUrl = params.get("url");
 
   document.getElementById("urlText").innerText = riskyUrl;
 
-  // Go Back to Safety
-  document.getElementById("backBtn").onclick = () => {
-    window.location.href = "https://www.google.com"; // Always works
-  };
+  document.getElementById("backBtn").addEventListener("click", () => {
+    chrome.tabs.update({ url: "https://www.google.com" });
+  });
 
-  // Proceed Anyway
-  document.getElementById("continueBtn").onclick = () => {
-    window.open(riskyUrl, "_self"); // Forces navigation
-  };
+  document.getElementById("continueBtn").addEventListener("click", () => {
+    chrome.tabs.update({ url: riskyUrl });
+  });
 </script>
 
 

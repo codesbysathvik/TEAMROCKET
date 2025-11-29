@@ -2,14 +2,19 @@
   "manifest_version": 3,
   "name": "PhishShield — TeamRocket",
   "version": "1.0",
+
   "description": "AI-powered phishing detector.",
+
   "permissions": [
     "tabs",
     "activeTab",
-    "notifications",
-    "scripting"
+    "scripting",
+    "notifications"
   ],
-  "host_permissions": ["<all_urls>"],
+
+  "host_permissions": [
+    "<all_urls>"
+  ],
 
   "background": {
     "service_worker": "background.js"
@@ -24,8 +29,11 @@
     }
   },
 
-  "web_accessible_resources": [{
-    "resources": ["block.html", "block.css"],
+  "web_accessible_resources": [
+  {
+    "resources": ["block.html", "block.css", "block.js"],
     "matches": ["<all_urls>"]
-  }]
+  }
+]
+
 }
