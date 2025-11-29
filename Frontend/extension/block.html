@@ -28,14 +28,17 @@
 
   document.getElementById("urlText").innerText = riskyUrl;
 
+  // Go Back to Safety
   document.getElementById("backBtn").onclick = () => {
-    history.back();
+    window.location.href = "https://www.google.com"; // Always works
   };
 
+  // Proceed Anyway
   document.getElementById("continueBtn").onclick = () => {
-    window.location.href = riskyUrl;
+    window.open(riskyUrl, "_self"); // Forces navigation
   };
 </script>
+
 
 </body>
 </html>
